@@ -55,11 +55,12 @@ export interface AnimePreset {
 
 export const DEFAULT_ANIME_PRESETS: AnimePreset[] = [
   { id: 21, title: 'One Piece', slug: 'one-piece' },
-  { id: 16498, title: 'Dragon Ball Z', slug: 'dragon-ball-z' },
+  { id: 813, title: 'Dragon Ball Z', slug: 'dragon-ball-z' },
   { id: 226, title: 'Elfen Lied', slug: 'elfen-lied' },
   { id: 170942, title: 'Orb: On the Movements of the Earth', slug: 'orb' },
   { id: 269, title: 'Bleach', slug: 'bleach' },
   { id: 20, title: 'Naruto', slug: 'naruto' },
   { id: 153518, title: 'Frieren', slug: 'frieren' },
   { id: 131681, title: 'Oshi no Ko', slug: 'oshi-no-ko' },
+  { id: 97668, title: 'One-Punch Man', slug: 'one-punch-man' },
 ]

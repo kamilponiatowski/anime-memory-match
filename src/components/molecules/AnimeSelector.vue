@@ -83,7 +83,7 @@ function clearSelection() {
           placeholder="Szukaj anime..."
           autocomplete="off"
           aria-label="Wyszukaj anime"
-          aria-expanded="showDropdown"
+          :aria-expanded="showDropdown"
           aria-haspopup="listbox"
           @input="handleInput"
           @focus="onFocus"
