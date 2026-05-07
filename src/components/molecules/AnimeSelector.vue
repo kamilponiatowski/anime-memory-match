@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useAniList } from '@/composables/useAniList'
 import type { AnimePreset } from '@/types/game.types'
 
 const {
   searchQuery,
   searchResults,
-  presets,
+  allPresets,
   selectedAnime,
   isSearching,
   isLoadingCharacters,
   error,
+  loadTopAnime,
+  selectRandomAnime,
   onSearchInput,
   onSelectAnime,
 } = useAniList()
@@ -19,8 +21,12 @@ const showDropdown = ref(false)
 const inputRef = ref<HTMLInputElement | null>(null)
 
 const displayList = computed<AnimePreset[]>(() =>
-  searchQuery.value.length >= 2 ? searchResults.value : presets.value,
+  searchQuery.value.length >= 2 ? searchResults.value : allPresets.value,
 )
+
+onMounted(() => {
+  loadTopAnime()
+})
 
 function handleInput(e: Event) {
   const val = (e.target as HTMLInputElement).value
@@ -47,6 +53,11 @@ function clearSelection() {
   showDropdown.value = true
   setTimeout(() => inputRef.value?.focus(), 0)
 }
+
+function randomize() {
+  selectRandomAnime()
+  showDropdown.value = false
+}
 </script>
 
 <template>
@@ -55,13 +66,38 @@ function clearSelection() {
     <div class="selector-field" :class="{ 'is-open': showDropdown, 'is-selected': !!selectedAnime }">
       <!-- Jeśli coś zaznaczono i nie piszemy — pokaż chip -->
       <div v-if="selectedAnime && !showDropdown" class="selected-chip">
-        <span class="selected-dot" aria-hidden="true" />
-        <span class="selected-label truncate">{{ selectedAnime.title }}</span>
-        <!-- Loading / done -->
-        <span v-if="isLoadingCharacters" class="chip-spinner" aria-hidden="true" />
-        <svg v-else-if="!error" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-emerald-400 shrink-0" aria-hidden="true">
-          <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd"/>
-        </svg>
+        <!-- Clickable label area — opens search on click -->
+        <button
+          class="chip-label-btn"
+          :aria-label="`Zmień anime: ${selectedAnime.title} (kliknij by edytować)`"
+          @click="clearSelection"
+        >
+          <span class="selected-dot" aria-hidden="true" />
+          <span class="selected-label truncate">{{ selectedAnime.title }}</span>
+          <!-- Status: loading or done -->
+          <span v-if="isLoadingCharacters" class="chip-spinner" aria-hidden="true" />
+          <svg v-else-if="!error" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 text-emerald-400 shrink-0" aria-hidden="true">
+            <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+        <!-- Random dice button -->
+        <button class="chip-random" aria-label="Losuj anime" title="Losuj anime" @click.stop="randomize">
+          <svg viewBox="0 0 20 20" class="w-3.5 h-3.5" aria-hidden="true" fill="none">
+            <defs>
+              <linearGradient id="diceGradSel" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#c4b5fd"/>
+                <stop offset="100%" stop-color="#f0abfc"/>
+              </linearGradient>
+            </defs>
+            <rect x="1" y="1" width="18" height="18" rx="3.5" stroke="url(#diceGradSel)" stroke-width="1.5"/>
+            <circle cx="6" cy="6" r="1.4" fill="url(#diceGradSel)"/>
+            <circle cx="14" cy="6" r="1.4" fill="url(#diceGradSel)"/>
+            <circle cx="10" cy="10" r="1.4" fill="url(#diceGradSel)"/>
+            <circle cx="6" cy="14" r="1.4" fill="url(#diceGradSel)"/>
+            <circle cx="14" cy="14" r="1.4" fill="url(#diceGradSel)"/>
+          </svg>
+        </button>
+        <!-- Clear button -->
         <button class="chip-clear" :aria-label="`Odznacz ${selectedAnime.title}`" @click.stop="clearSelection">
           <svg viewBox="0 0 20 20" fill="currentColor" class="w-3.5 h-3.5">
             <path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22Z"/>
@@ -89,8 +125,24 @@ function clearSelection() {
           @focus="onFocus"
           @blur="onBlur"
         />
-        <!-- Spinner wyszukiwania -->
+        <!-- Spinner or Dice -->
         <span v-if="isSearching" class="chip-spinner mr-2" aria-hidden="true" />
+        <button v-else class="input-dice" aria-label="Losuj anime z listy popularnych" title="Losuj anime" @click.stop="randomize">
+          <svg viewBox="0 0 20 20" class="w-4 h-4" aria-hidden="true" fill="none">
+            <defs>
+              <linearGradient id="diceGradInput" x1="0" y1="0" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#c4b5fd"/>
+                <stop offset="100%" stop-color="#f0abfc"/>
+              </linearGradient>
+            </defs>
+            <rect x="1" y="1" width="18" height="18" rx="3.5" stroke="url(#diceGradInput)" stroke-width="1.5"/>
+            <circle cx="6" cy="6" r="1.4" fill="url(#diceGradInput)"/>
+            <circle cx="14" cy="6" r="1.4" fill="url(#diceGradInput)"/>
+            <circle cx="10" cy="10" r="1.4" fill="url(#diceGradInput)"/>
+            <circle cx="6" cy="14" r="1.4" fill="url(#diceGradInput)"/>
+            <circle cx="14" cy="14" r="1.4" fill="url(#diceGradInput)"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Dropdown -->
@@ -146,7 +198,7 @@ function clearSelection() {
       <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Popularne anime</p>
       <div class="flex flex-wrap gap-1.5" role="group" aria-label="Szybki wybór anime">
         <button
-          v-for="preset in presets"
+          v-for="preset in allPresets"
           :key="preset.id"
           class="preset-chip"
           :class="{ 'is-active': selectedAnime?.id === preset.id }"
@@ -158,19 +210,30 @@ function clearSelection() {
       </div>
     </div>
 
-    <!-- Ładowanie postaci -->
-    <Transition name="fade">
-      <p v-if="selectedAnime && isLoadingCharacters" class="text-xs text-slate-400 flex items-center gap-2">
-        <span class="chip-spinner" aria-hidden="true" />
-        Ładowanie postaci...
-      </p>
-      <p v-else-if="selectedAnime && !error && !isLoadingCharacters" class="text-xs text-emerald-400 flex items-center gap-1.5">
-        <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 shrink-0" aria-hidden="true">
-          <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd"/>
-        </svg>
-        Postacie załadowano
-      </p>
-    </Transition>
+    <!-- Ładowanie postaci — fixed height prevents layout shift -->
+    <div class="status-row" aria-live="polite" aria-atomic="true">
+      <Transition name="status-fade" mode="out-in">
+        <p
+          v-if="selectedAnime && isLoadingCharacters"
+          key="loading"
+          class="status-text status-text--loading"
+        >
+          <span class="chip-spinner" aria-hidden="true" />
+          Ładowanie postaci...
+        </p>
+        <p
+          v-else-if="selectedAnime && !error && !isLoadingCharacters"
+          key="done"
+          class="status-text status-text--done"
+        >
+          <svg viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 shrink-0" aria-hidden="true">
+            <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143Z" clip-rule="evenodd"/>
+          </svg>
+          Postacie załadowano
+        </p>
+        <span v-else key="empty" class="status-text" />
+      </Transition>
+    </div>
   </div>
 </template>
 
@@ -196,9 +259,31 @@ function clearSelection() {
 .selected-chip {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.65rem 0.75rem;
+  gap: 0.375rem;
+  padding: 0.4rem 0.5rem 0.4rem 0;
   min-width: 0;
+}
+
+/* Clickable label button inside chip */
+.chip-label-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  padding: 0.25rem 0.4rem 0.25rem 0.75rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+.chip-label-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.chip-label-btn:focus-visible {
+  outline: 2px solid rgba(196, 181, 253, 0.7);
+  outline-offset: 2px;
 }
 .selected-dot {
   width: 8px;
@@ -230,11 +315,34 @@ function clearSelection() {
 }
 .chip-clear:hover { background: rgba(255,255,255,0.15); color: #fff; }
 
+/* Random dice button */
+.chip-random {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(139, 92, 246, 0.1);
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.15s;
+}
+.chip-random:hover {
+  background: rgba(139, 92, 246, 0.25);
+  transform: rotate(90deg);
+}
+.chip-random:focus-visible {
+  outline: 2px solid rgba(196, 181, 253, 0.7);
+  outline-offset: 2px;
+}
+
 /* Input row */
 .input-row {
   display: flex;
   align-items: center;
-  padding: 0.1rem 0.75rem;
+  padding: 0.1rem 0.5rem 0.1rem 0.75rem;
 }
 .input-icon {
   width: 1rem;
@@ -253,6 +361,30 @@ function clearSelection() {
   padding: 0.6rem 0;
 }
 .selector-input::placeholder { color: #475569; }
+
+/* Dice button inside the search input row */
+.input-dice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 0.25rem;
+  border-radius: 7px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.2s;
+}
+.input-dice:hover {
+  background: rgba(139, 92, 246, 0.15);
+  transform: rotate(90deg);
+}
+.input-dice:focus-visible {
+  outline: 2px solid rgba(196, 181, 253, 0.7);
+  outline-offset: 2px;
+}
 
 /* Spinner */
 .chip-spinner {
@@ -331,5 +463,28 @@ function clearSelection() {
 .fade-leave-active { transition: opacity 0.2s ease; }
 .fade-enter-from,
 .fade-leave-to { opacity: 0; }
+
+/* Status row — fixed height eliminates layout shift */
+.status-row {
+  height: 1.4rem; /* ~22px, matches text-xs line-height */
+  display: flex;
+  align-items: center;
+}
+
+.status-text {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  line-height: 1;
+}
+
+.status-text--loading { color: #94a3b8; }
+.status-text--done    { color: #34d399; }
+
+.status-fade-enter-active,
+.status-fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.status-fade-enter-from   { opacity: 0; transform: translateY(4px); }
+.status-fade-leave-to     { opacity: 0; transform: translateY(-4px); }
 </style>
 

@@ -79,27 +79,45 @@ function handleClick() {
 </template>
 
 <style scoped>
+/* ─── Wrapper ───────────────────────────────────────────────────────────── */
 .card-wrapper {
-  perspective: 800px;
+  perspective: 900px;
   height: 100%;
 }
 
+/* ─── Inner — the 3-D pivot ─────────────────────────────────────────────── */
 .card-inner {
   position: relative;
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 12px;
   cursor: pointer;
   border: none;
   padding: 0;
   background: transparent;
+  /* Flip: snappy anticipation → slow reveal → quick settle */
+  transition:
+    transform 0.55s cubic-bezier(0.34, 1.3, 0.64, 1),
+    box-shadow 0.3s ease;
+  will-change: transform;
 }
 
 .card-inner:focus-visible {
   outline: 2px solid oklch(75% 0.15 200);
   outline-offset: 3px;
+}
+
+/* Hover lift — only for unflipped, enabled cards */
+.card-wrapper:not(.is-matched) .card-inner:not(:disabled):not(.is-flipped):hover {
+  transform: translateY(-4px) scale(1.035);
+  box-shadow: 0 12px 30px rgba(139, 92, 246, 0.35);
+}
+
+/* Click press-down feel */
+.card-wrapper:not(.is-matched) .card-inner:not(:disabled):active {
+  transform: translateY(0) scale(0.97);
+  transition-duration: 0.08s;
 }
 
 .card-inner.is-flipped {
@@ -110,6 +128,7 @@ function handleClick() {
   cursor: default;
 }
 
+/* ─── Faces ─────────────────────────────────────────────────────────────── */
 .card-face {
   position: absolute;
   inset: 0;
@@ -119,22 +138,28 @@ function handleClick() {
 }
 
 .card-back {
-  background: linear-gradient(135deg, oklch(30% 0.06 260), oklch(20% 0.04 260));
+  background: linear-gradient(145deg, oklch(28% 0.07 270), oklch(18% 0.05 265));
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid oklch(40% 0.06 260);
+  border: 1.5px solid oklch(38% 0.07 265);
   transition: border-color 0.2s;
 }
 
 .card-wrapper:not(.is-matched) .card-inner:not(:disabled):hover .card-back {
-  border-color: oklch(55% 0.15 250);
+  border-color: oklch(58% 0.18 255);
+  box-shadow: inset 0 0 20px rgba(139, 92, 246, 0.15);
 }
 
 .card-back-symbol {
   width: clamp(1.5rem, 4vw, 2.5rem);
   height: auto;
   filter: drop-shadow(0 0 8px rgba(196, 181, 253, 0.6));
+  transition: filter 0.25s;
+}
+
+.card-wrapper:not(.is-matched) .card-inner:not(:disabled):hover .card-back-symbol {
+  filter: drop-shadow(0 0 14px rgba(196, 181, 253, 0.9));
 }
 
 .card-front {
@@ -153,21 +178,31 @@ function handleClick() {
   text-align: center;
 }
 
+/* ─── Matched state ─────────────────────────────────────────────────────── */
 .is-matched .card-inner {
+  /* Persist flipped state while animating */
+  transform: rotateY(180deg);
   outline: 2px solid oklch(65% 0.2 140);
   outline-offset: 2px;
-  animation: matchPulse 0.6s ease forwards;
+  animation: matchCelebrate 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-@keyframes matchPulse {
-  0% { transform: rotateY(180deg) scale(1); }
-  50% { transform: rotateY(180deg) scale(1.06); box-shadow: 0 0 18px oklch(65% 0.25 140); }
-  100% { transform: rotateY(180deg) scale(1); }
+@keyframes matchCelebrate {
+  0%   { transform: rotateY(180deg) scale(1); box-shadow: none; }
+  30%  { transform: rotateY(180deg) scale(1.08) rotate(2deg);
+         box-shadow: 0 0 24px oklch(65% 0.28 140); }
+  60%  { transform: rotateY(180deg) scale(1.05) rotate(-1.5deg); }
+  80%  { transform: rotateY(180deg) scale(1.02) rotate(0.5deg); }
+  100% { transform: rotateY(180deg) scale(1); box-shadow: 0 0 8px oklch(60% 0.2 140); }
 }
 
+/* ─── Reduced motion ────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   .card-inner {
     transition-duration: 0.01ms;
+  }
+  .card-wrapper:not(.is-matched) .card-inner:not(:disabled):not(.is-flipped):hover {
+    transform: none;
   }
   .is-matched .card-inner {
     animation: none;

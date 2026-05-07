@@ -5,16 +5,19 @@ import GameSetup from '@/components/organisms/GameSetup.vue'
 import AudioControls from '@/components/molecules/AudioControls.vue'
 import { useGame } from '@/composables/useGame'
 import { useSound } from '@/composables/useSound'
+import { useCookieConsent } from '@/composables/useCookieConsent'
 import type { Difficulty } from '@/types/game.types'
 
 const router = useRouter()
 const { startGame } = useGame()
 const { startAmbientIfOff } = useSound()
+const { hasConsented } = useCookieConsent()
 
-// Try autoplay on mount (succeeds on sites with autoplay permission;
-// silently fails in most browsers — music button then works on first click)
+// Start music automatically only when user has previously given consent
 onMounted(() => {
-  startAmbientIfOff()
+  if (hasConsented.value === 'accepted') {
+    startAmbientIfOff()
+  }
 })
 
 async function handleStart(difficulty: Difficulty) {
@@ -24,7 +27,7 @@ async function handleStart(difficulty: Difficulty) {
 </script>
 
 <template>
-  <main class="relative min-h-screen flex flex-col items-center justify-center px-4 py-10 overflow-hidden z-10">
+  <main class="relative min-h-screen flex flex-col items-center justify-center px-4 py-10 pb-14 overflow-hidden z-10">
     <a href="#main-content" class="skip-link">Przejdź do treści</a>
 
     <!-- Ambient blobs -->

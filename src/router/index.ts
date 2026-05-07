@@ -23,6 +23,12 @@ const router = createRouter({
       meta: { title: 'Wynik — Anime Memory Match', requiresResult: true },
     },
     {
+      path: '/privacy',
+      name: 'privacy',
+      component: () => import('@/views/PrivacyView.vue'),
+      meta: { title: 'Polityka Prywatności — Anime Memory Match' },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),

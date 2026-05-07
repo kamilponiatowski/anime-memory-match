@@ -1,5 +1,5 @@
 <script setup lang="ts">
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline'
 type Size = 'sm' | 'md' | 'lg'
 
 interface Props {
@@ -27,6 +27,7 @@ const variantClasses: Record<Variant, string> = {
   primary: 'bg-blue-600 hover:bg-blue-500 text-white',
   secondary: 'bg-slate-700 hover:bg-slate-600 text-white',
   ghost: 'bg-transparent hover:bg-slate-700 text-slate-200 border border-slate-600',
+  outline: 'bg-transparent text-violet-300 border border-violet-500/50 hover:border-violet-400 hover:bg-violet-500/10 hover:text-violet-200',
   danger: 'bg-red-600 hover:bg-red-500 text-white',
 }
 

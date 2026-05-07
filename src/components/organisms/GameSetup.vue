@@ -22,7 +22,7 @@ const difficulties: Array<{ value: Difficulty; label: string; hint: string }> = 
 
 <template>
   <section class="space-y-7 max-w-lg mx-auto" aria-labelledby="setup-heading">
-    <h2 id="setup-heading" class="text-2xl font-bold text-slate-100">Konfiguracja gry</h2>
+    <h2 id="setup-heading" class="text-2xl font-bold text-slate-100">Wybierz Se!</h2>
 
     <!-- Wybór anime -->
     <AnimeSelector />

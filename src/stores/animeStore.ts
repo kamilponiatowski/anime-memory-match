@@ -14,8 +14,21 @@ export const useAnimeStore = defineStore('anime', () => {
   const searchResults = ref<AnimePreset[]>([])
   const error = ref<string | null>(null)
 
+  // ── Top anime (fetched once, merged with hardcoded presets) ──────────
+  const topAnime = ref<AnimePreset[]>([])
+  const randomPool = ref<AnimePreset[]>([]) // full pool (50) for dice randomisation
+  let _topLoaded = false
+
   // ── Getters ────────────────────────────────────────────────────────
   const presets = computed(() => DEFAULT_ANIME_PRESETS)
+
+  /** Hardcoded presets + unique entries from top 10, deduped by id */
+  const allPresets = computed<AnimePreset[]>(() => {
+    const existingIds = new Set(DEFAULT_ANIME_PRESETS.map((p) => p.id))
+    const unique = topAnime.value.filter((p) => !existingIds.has(p.id))
+    return [...DEFAULT_ANIME_PRESETS, ...unique]
+  })
+
   const hasCharacters = computed(() => characters.value.length > 0)
 
   // ── Actions ────────────────────────────────────────────────────────
@@ -44,6 +57,28 @@ export const useAnimeStore = defineStore('anime', () => {
     }
   }
 
+  /** Fetch top 50 from AniList once per session — silently ignores errors */
+  async function loadTopAnime(): Promise<void> {
+    if (_topLoaded) return
+    _topLoaded = true
+    try {
+      const all = await anilistRepository.getTopAnime(50)
+      randomPool.value = all
+      topAnime.value = all.slice(0, 10) // first 10 shown as preset chips
+    } catch {
+      // presets still work without top anime
+    }
+  }
+
+  /** Pick a random anime from the full API pool and select it */
+  async function selectRandomAnime(): Promise<void> {
+    // Ensure pool is loaded — no-op if already fetched
+    await loadTopAnime()
+    const pool = randomPool.value.length > 0 ? randomPool.value : DEFAULT_ANIME_PRESETS
+    const pick = pool[Math.floor(Math.random() * pool.length)]!
+    await selectAnime(pick)
+  }
+
   function clearSearch(): void {
     searchQuery.value = ''
     searchResults.value = []
@@ -68,11 +103,14 @@ export const useAnimeStore = defineStore('anime', () => {
     searchQuery,
     searchResults,
     presets,
+    allPresets,
     error,
     hasCharacters,
     selectAnime,
+    selectRandomAnime,
     searchAnime,
     clearSearch,
+    loadTopAnime,
     reset,
   }
 })

@@ -6,6 +6,7 @@ import type { GameCard, GameStatus, Difficulty, GameResult } from '@/types/game.
 export const useGameStore = defineStore('game', () => {
   // ── State ──────────────────────────────────────────────────────────
   const cards = ref<GameCard[]>([])
+  const savedCards = ref<GameCard[]>([]) // snapshot for replay
   const flippedCards = ref<GameCard[]>([])
   const matchedPairs = ref(0)
   const totalPairs = ref(0)
@@ -54,6 +55,7 @@ export const useGameStore = defineStore('game', () => {
   // ── Actions ────────────────────────────────────────────────────────
   function initGame(gameCards: GameCard[], pairs: number) {
     cards.value = gameCards
+    savedCards.value = gameCards.map((c) => ({ ...c })) // shallow snapshot preserves order
     totalPairs.value = pairs
     matchedPairs.value = 0
     moves.value = 0
@@ -109,6 +111,18 @@ export const useGameStore = defineStore('game', () => {
     flippedCards.value = []
   }
 
+  /** Restart same card layout — lets the player beat their own score */
+  function replayGame() {
+    if (savedCards.value.length === 0) return
+    cards.value = savedCards.value.map((c) => ({ ...c, isFlipped: false, isMatched: false }))
+    matchedPairs.value = 0
+    moves.value = 0
+    flippedCards.value = []
+    startTime.value = null
+    endTime.value = null
+    status.value = 'playing'
+  }
+
   function resetGame() {
     cards.value = []
     flippedCards.value = []
@@ -135,6 +149,7 @@ export const useGameStore = defineStore('game', () => {
     gridCols,
     gameResult,
     initGame,
+    replayGame,
     flipCard,
     checkMatch,
     resetFlipped,

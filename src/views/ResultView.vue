@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useGameStore } from '@/stores/gameStore'
 import { useAnimeStore } from '@/stores/animeStore'
 import { useSound } from '@/composables/useSound'
+import { useGame } from '@/composables/useGame'
 import { anilistRepository } from '@/api/anilist/anilistRepository'
 import { storeToRefs } from 'pinia'
 import type { AnimePreset } from '@/types/game.types'
@@ -12,6 +13,7 @@ const router = useRouter()
 const gameStore = useGameStore()
 const animeStore = useAnimeStore()
 const { playVictory } = useSound()
+const { replayGame } = useGame()
 const { gameResult } = storeToRefs(gameStore)
 
 if (!gameResult.value) {
@@ -69,9 +71,10 @@ async function selectTopAnime(anime: AnimePreset) {
   router.push({ name: 'home' })
 }
 
+/** Restart with the SAME card layout — player can beat their own score */
 function playAgain() {
-  gameStore.resetGame()
-  router.push({ name: 'home' })
+  replayGame()
+  router.push({ name: 'game' })
 }
 
 function changeAnime() {
@@ -87,7 +90,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="relative min-h-dvh flex items-center justify-center px-4 overflow-y-auto overflow-x-hidden z-10">
+  <main class="relative min-h-dvh flex items-center justify-center px-4 pb-14 overflow-y-auto overflow-x-hidden z-10">
     <!-- Blobs -->
     <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       <div class="result-blob blob-a"></div>
@@ -189,7 +192,7 @@ onMounted(() => {
       <!-- Top 10 anime — zagraj następne -->
       <section aria-labelledby="top-anime-heading">
         <h2 id="top-anime-heading" class="text-sm font-semibold uppercase tracking-widest text-slate-400 mb-3">
-          Top 10 najpopularniejszych anime — zagraj następne
+          Top 50 najpopularniejszych anime — zagraj następne
         </h2>
 
         <!-- Skeleton ładowania -->

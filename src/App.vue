@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
 import StarBackground from '@/components/atoms/StarBackground.vue'
+import AppFooter from '@/components/atoms/AppFooter.vue'
+import CookieBanner from '@/components/molecules/CookieBanner.vue'
 </script>
 
 <template>
@@ -10,6 +12,8 @@ import StarBackground from '@/components/atoms/StarBackground.vue'
       <component :is="Component" :key="route.name" />
     </Transition>
   </RouterView>
+  <AppFooter />
+  <CookieBanner />
 </template>
 
 <style>
