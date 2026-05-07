@@ -146,7 +146,7 @@ function clearSelection() {
       <p class="text-xs font-medium uppercase tracking-wider text-slate-500">Popularne anime</p>
       <div class="flex flex-wrap gap-1.5" role="group" aria-label="Szybki wybór anime">
         <button
-          v-for="preset in presets.slice(0, 6)"
+          v-for="preset in presets"
           :key="preset.id"
           class="preset-chip"
           :class="{ 'is-active': selectedAnime?.id === preset.id }"

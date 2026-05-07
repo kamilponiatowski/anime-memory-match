@@ -18,16 +18,22 @@ if (!gameResult.value) {
   router.replace({ name: 'home' })
 }
 
+const MAX_STARS = 6
+
 const stars = computed(() => {
   if (!gameResult.value) return 1
   const { accuracy, timeSeconds, totalPairs } = gameResult.value
-  if (accuracy >= 80 && timeSeconds < totalPairs * 15) return 3
-  if (accuracy >= 60) return 2
+  const fastThreshold = totalPairs * 10 // seconds per pair
+  if (accuracy >= 100 && timeSeconds <= fastThreshold) return 6
+  if (accuracy >= 90 && timeSeconds <= fastThreshold * 1.5) return 5
+  if (accuracy >= 75) return 4
+  if (accuracy >= 60) return 3
+  if (accuracy >= 40) return 2
   return 1
 })
 
 const ratingLabel = computed(() =>
-  `Ocena: ${stars.value} ${stars.value === 1 ? 'gwiazdka' : 'gwiazdki'} z 3`,
+  `Ocena: ${stars.value} ${stars.value === 1 ? 'gwiazdka' : 'gwiazdek'} z ${MAX_STARS}`,
 )
 
 const resultMessage = computed(() => {
@@ -81,14 +87,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <main class="relative min-h-screen flex items-start justify-center py-8 px-4 overflow-hidden z-10">
+  <main class="relative min-h-dvh flex items-center justify-center px-4 overflow-y-auto overflow-x-hidden z-10">
     <!-- Blobs -->
     <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       <div class="result-blob blob-a"></div>
       <div class="result-blob blob-b"></div>
     </div>
 
-    <div class="relative z-10 max-w-md w-full flex flex-col gap-6" aria-labelledby="result-heading">
+    <div class="relative z-10 max-w-md w-full flex flex-col gap-6 py-8" aria-labelledby="result-heading">
 
       <!-- Nagłówek — SVG trofeum -->
       <div class="text-center space-y-2" aria-live="polite">
@@ -114,14 +120,14 @@ onMounted(() => {
       </div>
 
       <!-- Gwiazdki -->
-      <div class="flex justify-center gap-3" :aria-label="ratingLabel" role="img">
+      <div class="flex justify-center gap-2" :aria-label="ratingLabel" role="img">
         <svg
-          v-for="i in 3"
+          v-for="i in MAX_STARS"
           :key="i"
           viewBox="0 0 24 24"
-          class="w-10 h-10 transition-all duration-500"
+          class="w-8 h-8 transition-all duration-500"
           :class="i <= stars ? 'star-filled' : 'star-empty'"
-          :style="{ transitionDelay: `${(i - 1) * 120}ms` }"
+          :style="{ transitionDelay: `${(i - 1) * 100}ms` }"
           fill="currentColor"
           aria-hidden="true"
         >

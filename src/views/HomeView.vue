@@ -11,15 +11,10 @@ const router = useRouter()
 const { startGame } = useGame()
 const { startAmbientIfOff } = useSound()
 
-// Autostart muzyki przy pierwszej interakcji użytkownika
+// Try autoplay on mount (succeeds on sites with autoplay permission;
+// silently fails in most browsers — music button then works on first click)
 onMounted(() => {
-  const handler = () => {
-    startAmbientIfOff()
-    window.removeEventListener('pointerdown', handler)
-    window.removeEventListener('keydown', handler)
-  }
-  window.addEventListener('pointerdown', handler, { once: true, passive: true })
-  window.addEventListener('keydown', handler, { once: true, passive: true })
+  startAmbientIfOff()
 })
 
 async function handleStart(difficulty: Difficulty) {

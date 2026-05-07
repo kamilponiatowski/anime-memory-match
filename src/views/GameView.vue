@@ -28,7 +28,7 @@ function goHome() {
 </script>
 
 <template>
-  <main class="relative min-h-screen flex flex-col p-2 sm:p-4 overflow-hidden z-10" id="main-content">
+  <main class="relative min-h-dvh flex flex-col items-center justify-center p-2 sm:p-4 overflow-hidden z-10" id="main-content">
     <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
       <div class="game-blob"></div>
     </div>

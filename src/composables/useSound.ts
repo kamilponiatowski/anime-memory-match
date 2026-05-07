@@ -65,12 +65,12 @@ function tone(
 }
 
 // ── Radio helpers ────────────────────────────────────────────────────────────
-function startRadio() {
+async function startRadio(): Promise<void> {
   if (_radioEl) return
   const src = RADIO_STREAMS[_streamIdx] ?? RADIO_STREAMS[0]!
-  _radioEl = new Audio(src)
-  _radioEl.volume = _isMuted.value ? 0 : 0.35
-  _radioEl.onerror = () => {
+  const audio = new Audio(src)
+  audio.volume = _isMuted.value ? 0 : 0.35
+  audio.onerror = () => {
     // Spróbuj następnego streamu przy błędzie
     _streamIdx = (_streamIdx + 1) % RADIO_STREAMS.length
     if (_radioEl) {
@@ -78,7 +78,9 @@ function startRadio() {
       _radioEl.play().catch(() => {})
     }
   }
-  _radioEl.play().catch(() => {})
+  // throws DOMException if browser blocks autoplay — caller handles it
+  await audio.play()
+  _radioEl = audio // only assigned after successful play
 }
 
 function stopRadio() {
@@ -137,16 +139,24 @@ export function useSound() {
       _isAmbientOn.value = false
     } else {
       await ensureRunning()
-      startRadio()
-      _isAmbientOn.value = true
+      try {
+        await startRadio()
+        _isAmbientOn.value = true
+      } catch {
+        // play() unexpectedly failed — state stays false
+      }
     }
   }
 
   async function startAmbientIfOff() {
     if (_isAmbientOn.value) return
-    await ensureRunning()
-    startRadio()
-    _isAmbientOn.value = true
+    try {
+      await ensureRunning()
+      await startRadio()
+      _isAmbientOn.value = true
+    } catch {
+      // autoplay blocked by browser — music button still works on first click
+    }
   }
 
   return {

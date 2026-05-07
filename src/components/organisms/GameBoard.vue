@@ -27,10 +27,15 @@ const gridClass = computed(() => ({
   'grid-cols-6': gridCols.value === 6,
 }))
 
-// Oblicz liczbę wierszy dynamicznie na podstawie trudności
 const gridRows = computed(() => {
   const cfg = DIFFICULTY_CONFIG[difficulty.value]
   return Math.ceil((cfg.pairs * 2) / cfg.cols)
+})
+
+// Number of skeleton cards = actual card count for the chosen difficulty
+const skeletonCount = computed(() => {
+  const cfg = DIFFICULTY_CONFIG[difficulty.value]
+  return cfg.pairs * 2
 })
 
 // Wysokość wiersza kart skalowana do ekranu
@@ -47,30 +52,33 @@ const rowHeight = computed(
       {{ matchedPairs }} par znalezionych z {{ totalPairs }}.
     </p>
 
-    <!-- Skeleton podczas ładowania -->
-    <div v-if="cards.length === 0" :class="gridClass" :style="{ gridAutoRows: rowHeight }">
-      <BaseCardSkeleton v-for="n in 16" :key="n" />
-    </div>
+    <!-- Skeleton / Cards — wrapped in Transition for smooth crossfade -->
+    <Transition name="board-fade" mode="out-in">
+      <!-- Skeleton podczas ładowania -->
+      <div v-if="cards.length === 0" :class="gridClass" :style="{ gridAutoRows: rowHeight }">
+        <BaseCardSkeleton v-for="n in skeletonCount" :key="n" />
+      </div>
 
-    <!-- Plansza kart -->
-    <TransitionGroup
-      v-else
-      tag="div"
-      name="card-appear"
-      :class="gridClass"
-      :style="{ gridAutoRows: rowHeight }"
-      role="grid"
-      :aria-label="`Plansza ${gridCols} kolumn, ${cards.length} kart`"
-    >
-      <GameCard
-        v-for="(card, index) in cards"
-        :key="card.id"
-        :card="card"
-        :is-disabled="isDisabled"
-        :style="{ '--card-delay': `${index * 40}ms` }"
-        @flip="emit('cardFlip', $event)"
-      />
-    </TransitionGroup>
+      <!-- Plansza kart -->
+      <TransitionGroup
+        v-else
+        tag="div"
+        name="card-appear"
+        :class="gridClass"
+        :style="{ gridAutoRows: rowHeight }"
+        role="grid"
+        :aria-label="`Plansza ${gridCols} kolumn, ${cards.length} kart`"
+      >
+        <GameCard
+          v-for="(card, index) in cards"
+          :key="card.id"
+          :card="card"
+          :is-disabled="isDisabled"
+          :style="{ '--card-delay': `${index * 40}ms` }"
+          @flip="emit('cardFlip', $event)"
+        />
+      </TransitionGroup>
+    </Transition>
   </section>
 </template>
 
@@ -87,6 +95,16 @@ const rowHeight = computed(
   transition: opacity 0.2s ease;
 }
 .card-appear-leave-to {
+  opacity: 0;
+}
+
+/* Smooth crossfade between skeleton grid and card grid */
+.board-fade-enter-active,
+.board-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.board-fade-enter-from,
+.board-fade-leave-to {
   opacity: 0;
 }
 </style>

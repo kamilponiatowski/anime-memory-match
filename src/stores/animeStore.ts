@@ -1,17 +1,17 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import { DEFAULT_ANIME_PRESETS } from '@/types/game.types'
-import type { AnimePreset, Character } from '@/types/game.types'
 import { anilistRepository } from '@/api/anilist/anilistRepository'
+import type { AnimePreset, Character } from '@/types/game.types'
 
 export const useAnimeStore = defineStore('anime', () => {
   // ── State ──────────────────────────────────────────────────────────
   const selectedAnime = ref<AnimePreset | null>(null)
+  const characters = ref<Character[]>([])
+  const isLoadingCharacters = ref(false)
+  const isSearching = ref(false)
   const searchQuery = ref('')
   const searchResults = ref<AnimePreset[]>([])
-  const characters = ref<Character[]>([])
-  const isSearching = ref(false)
-  const isLoadingCharacters = ref(false)
   const error = ref<string | null>(null)
 
   // ── Getters ────────────────────────────────────────────────────────
@@ -19,63 +19,59 @@ export const useAnimeStore = defineStore('anime', () => {
   const hasCharacters = computed(() => characters.value.length > 0)
 
   // ── Actions ────────────────────────────────────────────────────────
-  async function searchAnime(query: string) {
-    if (!query.trim() || query.trim().length < 2) return
-
-    isSearching.value = true
+  async function selectAnime(anime: AnimePreset): Promise<void> {
+    selectedAnime.value = anime
+    characters.value = []
     error.value = null
+    isLoadingCharacters.value = true
+    try {
+      characters.value = await anilistRepository.getCharactersByAnimeId(anime.id)
+    } catch (e) {
+      error.value = e instanceof Error ? e.message : 'Błąd ładowania postaci'
+    } finally {
+      isLoadingCharacters.value = false
+    }
+  }
 
+  async function searchAnime(query: string): Promise<void> {
+    isSearching.value = true
     try {
       searchResults.value = await anilistRepository.searchAnime(query)
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Błąd wyszukiwania'
+    } catch {
       searchResults.value = []
     } finally {
       isSearching.value = false
     }
   }
 
-  async function selectAnime(anime: AnimePreset) {
-    selectedAnime.value = anime
+  function clearSearch(): void {
     searchQuery.value = ''
     searchResults.value = []
-    isLoadingCharacters.value = true
-    error.value = null
-
-    try {
-      characters.value = await anilistRepository.getCharactersByAnimeId(anime.id, 50)
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : 'Nie udało się załadować postaci'
-      characters.value = []
-    } finally {
-      isLoadingCharacters.value = false
-    }
+    isSearching.value = false
   }
 
-  function clearSearch() {
-    searchQuery.value = ''
-    searchResults.value = []
-  }
-
-  function reset() {
+  function reset(): void {
     selectedAnime.value = null
     characters.value = []
+    isLoadingCharacters.value = false
+    isSearching.value = false
+    searchQuery.value = ''
+    searchResults.value = []
     error.value = null
-    clearSearch()
   }
 
   return {
     selectedAnime,
+    characters,
+    isLoadingCharacters,
+    isSearching,
     searchQuery,
     searchResults,
-    characters,
-    isSearching,
-    isLoadingCharacters,
-    error,
     presets,
+    error,
     hasCharacters,
-    searchAnime,
     selectAnime,
+    searchAnime,
     clearSearch,
     reset,
   }

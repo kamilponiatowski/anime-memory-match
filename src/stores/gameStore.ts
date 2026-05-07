@@ -28,7 +28,10 @@ export const useGameStore = defineStore('game', () => {
 
   const accuracy = computed(() => {
     if (moves.value === 0) return 100
-    return Math.round((matchedPairs.value / moves.value) * 100)
+    // Perfect game = totalPairs * 2 flips (each card flipped exactly once)
+    // Accuracy = how close the player was to the perfect number of moves
+    const perfect = totalPairs.value * 2
+    return Math.min(100, Math.round((perfect / moves.value) * 100))
   })
 
   const progressPercent = computed(() => {
