@@ -7,7 +7,7 @@
  *  – Reactive state exposed via refs
  *
  * Rules:
- *  – _radioEl is only assigned after a successful play() promise
+ *  - _radioEl is reserved before play() resolves so concurrent starts share it
  *  – stopRadio() fully cleans up the element before nulling it
  *  – volume is stored in a ref so the slider can bind to it reactively
  */
@@ -25,6 +25,7 @@ const DEFAULT_RADIO_VOLUME = 0.35
 let _ctx: AudioContext | null = null
 let _masterGain: GainNode | null = null
 let _radioEl: HTMLAudioElement | null = null
+let _radioStartPromise: Promise<void> | null = null
 let _streamIdx = 0
 
 /** Reactive refs – shared across ALL useSound() call-sites */
@@ -75,33 +76,57 @@ function tone(
 }
 
 // ── Radio helpers ─────────────────────────────────────────────────────────────
+function switchToNextRadioStream(audio: HTMLAudioElement): void {
+  _streamIdx = (_streamIdx + 1) % RADIO_STREAMS.length
+  audio.src = RADIO_STREAMS[_streamIdx]!
+  audio.load()
+}
+
+async function playRadioWithFallback(audio: HTMLAudioElement): Promise<void> {
+  try {
+    await audio.play()
+  } catch (error) {
+    if (_radioEl !== audio || !audio.error) throw error
+
+    switchToNextRadioStream(audio)
+    await audio.play()
+  }
+}
+
 /** Returns the existing element if already playing – never creates a second one */
 async function startRadio(): Promise<void> {
+  if (_radioStartPromise) return _radioStartPromise
+
   if (_radioEl) {
     // Already exists – just unpause if needed
-    if (_radioEl.paused) await _radioEl.play()
+    if (_radioEl.paused) {
+      _radioStartPromise = playRadioWithFallback(_radioEl)
+        .finally(() => { _radioStartPromise = null })
+      await _radioStartPromise
+    }
     return
   }
   const src = RADIO_STREAMS[_streamIdx]!
   const audio = new Audio(src)
   audio.volume = _volume.value
+  _radioEl = audio
 
   audio.addEventListener('error', () => {
-    _streamIdx = (_streamIdx + 1) % RADIO_STREAMS.length
-    if (_radioEl) {
-      _radioEl.src = RADIO_STREAMS[_streamIdx]!
-      _radioEl.load()
-      _radioEl.play().catch(() => {})
-    }
+    if (_radioEl !== audio || _radioStartPromise) return
+    switchToNextRadioStream(audio)
+    audio.play().catch(() => {})
   })
 
   // Will throw DOMException if blocked by autoplay policy – caller must handle
-  await audio.play()
-  _radioEl = audio
+  _radioStartPromise = playRadioWithFallback(audio)
+    .finally(() => { _radioStartPromise = null })
+
+  await _radioStartPromise
 }
 
 function stopRadio(): void {
   if (!_radioEl) return
+  _radioStartPromise = null
   _radioEl.pause()
   _radioEl.removeAttribute('src')
   _radioEl.load() // abort pending network request
